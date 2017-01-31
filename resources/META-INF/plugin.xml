@@ -1,0 +1,34 @@
+<idea-plugin version="2">
+  <id>com.your.company.unique.plugin.id</id>
+  <name>Fluent Accessors</name>
+  <version>0.1.1</version>
+  <vendor email="maxsokol10@gmail.com" url="https://github.com/msokol10/idea-generate-fluent-interface">MSokol10</vendor>
+
+  <description>Generating getters and setters due to Fluent Interface</description>
+
+  <idea-version since-build="145.0"/>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <!-- Add your extensions here -->
+  </extensions>
+
+  <actions>
+    <!-- Add your actions here -->
+    <action id="com.msokol10.generate.fluent.accessors"
+            class="com.msokol10.intellijplugin.fluentaccessors.FluentAccessorsAction"
+            text="Fluent getters/setters..."
+            description="Generating getters and setters due to Fluent Interface">
+      <add-to-group group-id="JavaGenerateGroup1" anchor="before"
+                    relative-to-action="GenerateEquals"/>
+    </action>
+  </actions>
+
+  <application-components>
+    <component>
+      <implementation-class>
+        com.msokol10.intellijplugin.fluentaccessors.FluentAccessorsApplicationComponent
+      </implementation-class>
+    </component>
+  </application-components>
+
+</idea-plugin>
