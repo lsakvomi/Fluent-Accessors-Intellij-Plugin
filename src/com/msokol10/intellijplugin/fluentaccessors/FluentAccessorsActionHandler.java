@@ -6,7 +6,6 @@ import com.intellij.ide.util.MemberChooser;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.actionSystem.LangDataKeys;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.command.CommandProcessor;
 import com.intellij.openapi.editor.Caret;
 import com.intellij.openapi.editor.Editor;
@@ -143,8 +142,10 @@ public class FluentAccessorsActionHandler extends EditorWriteActionHandler {
                 final List<PsiFieldMember> list = chooser.getSelectedElements();
                 final String setterPrefix = chooser.getSetterPrefix();
                 final String getterPrefix = chooser.getGetterPrefix();
+                final String fluentPrefix = chooser.getFluentPrefix();
+                final boolean generateSetter = chooser.generateSetters();
                 final boolean generateGetter = chooser.generateGetters();
-                final boolean invokeExistingSetters = chooser.useSetters();
+                final boolean generateFluent = chooser.generateFluent();
                 if (list == null) {
                     return;
                 }
@@ -153,39 +154,48 @@ public class FluentAccessorsActionHandler extends EditorWriteActionHandler {
                         = ApplicationManager.getApplication()
                         .getComponent(FluentAccessorsApplicationComponent.class);
 
+                applicationComponent.updateIsGeneratingSetters(generateSetter);
                 applicationComponent.updateIsGeneratingGetters(generateGetter);
+                applicationComponent.updateIsGeneratingFluent(generateFluent);
                 applicationComponent.updateSetterPrefix(setterPrefix);
                 applicationComponent.updateGetterPrefix(getterPrefix);
-                applicationComponent.updateIsInvokeExistingSetters(invokeExistingSetters);
+                applicationComponent.updateFluentPrefix(fluentPrefix);
 
                 final List<PsiField> chosenFields = new LinkedList<>();
                 for (PsiFieldMember classMember : list) {
                     chosenFields.add(classMember.getElement());
                 }
 
-                executeGenerateLater(project,
-                                     editor, clazz,
+                executeGenerateLater(project, editor, clazz,
                                      chosenFields.toArray(new PsiField[chosenFields.size()]),
                                      setterPrefix,
                                      getterPrefix,
+                                     fluentPrefix,
+                                     generateSetter,
                                      generateGetter,
-                                     invokeExistingSetters
+                                     generateFluent
                 );
             }
         });
     }
 
-    private void executeGenerateLater(final Project project,
-                                      final Editor editor, final PsiClass clazz,
+    private void executeGenerateLater(final Project project, final Editor editor, final PsiClass clazz,
                                       final PsiField[] chosenFields,
                                       final String setterPrefix,
                                       final String getterPrefix,
+                                      final String fluentPrefix,
+                                      final boolean generateSetter,
                                       final boolean generateGetter,
-                                      final boolean invokeExistingSetters) {
+                                      final boolean generateFluent) {
         CommandProcessor.getInstance().executeCommand(project, () -> {
             ApplicationManager.getApplication().runWriteAction(() -> {
                 new FluentAccessorsWorker(project, editor, clazz,
-                                          setterPrefix, getterPrefix, generateGetter, invokeExistingSetters)
+                                          setterPrefix,
+                                          getterPrefix,
+                                          fluentPrefix,
+                                          generateSetter,
+                                          generateGetter,
+                                          generateFluent)
                         .execute(chosenFields);
             });
         }, "GenerateFluentInterface", null);

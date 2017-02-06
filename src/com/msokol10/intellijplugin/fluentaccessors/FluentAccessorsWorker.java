@@ -15,62 +15,104 @@ public class FluentAccessorsWorker {
     private CodeStyleManager codeStyleManager;
     private String setterPrefix;
     private String getterPrefix;
+    private String fluentPrefix;
+    private boolean generateSetter;
     private boolean generateGetter;
-    private boolean invokeExistingSetters;
+    private boolean generateFluent;
     private Editor editor;
 
 
-    public FluentAccessorsWorker(final Project project,
-                                         final Editor editor,
-                                         final PsiClass clazz,
+    public FluentAccessorsWorker(final Project project, final Editor editor, final PsiClass clazz,
                                          final String setterPrefix,
                                          final String getterPrefix,
+                                         final String fluentPrefix,
+                                         final boolean generateSetter,
                                          final boolean generateGetter,
-                                         final boolean invokeExistingSetters) {
+                                         final boolean generateFluent) {
         this.elementFactory = JavaPsiFacade.getElementFactory(project);
         this.editor = editor;
         this.psiClass = clazz;
         this.codeStyleManager = CodeStyleManager.getInstance(project);
         this.setterPrefix = setterPrefix;
         this.getterPrefix = getterPrefix;
+        this.fluentPrefix = fluentPrefix;
+        this.generateSetter = generateSetter;
         this.generateGetter = generateGetter;
-        this.invokeExistingSetters = invokeExistingSetters;
+        this.generateFluent = generateFluent;
     }
 
     public void execute(final PsiField[] candidateFields) {
-        if (generateGetter) {
-            generateGetterMethods(candidateFields);
-        }
 
-        generateSetterMethods(candidateFields);
-    }
+        FiMethodTester tester = new FiMethodTester(psiClass);
 
-    private void generateSetterMethods(final PsiField[] candidateFields) {
-        for (PsiField candidateField : candidateFields) {
-            createMethodFromText(buildWriteMethodText(candidateField));
-        }
-    }
+        for (PsiField field : candidateFields) {
 
-    private void generateGetterMethods(final PsiField[] candidateFields) {
-        for (PsiField candidateField : candidateFields) {
-            createMethodFromText(buildReadMethodText(candidateField));
+            if (generateSetter && !(tester.hasSetter(field, setterPrefix))) {
+                generateSetterMethod(field);
+            }
+            if (generateGetter && !(tester.hasGetter(field, getterPrefix))) {
+                generateGetterMethod(field);
+            }
+            if (generateFluent && !(tester.hasFluent(field, fluentPrefix))) {
+                generateFluentMethod(field);
+            }
         }
     }
 
-    private String buildReadMethodText(final PsiField candidateField) {
-        return "public " + candidateField.getType().getCanonicalText() + " "
-                + constructGetterName(candidateField) + "() " +
-                "{ " +
-                "return this." + candidateField.getName() + ";" +
-                "}";
+    private void generateSetterMethod(final PsiField candidateField) {
+        createMethodFromText(buildSetterMethodText(candidateField));
     }
 
-    private String constructGetterName(final PsiField candidateField) {
+    private void generateGetterMethod(final PsiField candidateField) {
+        createMethodFromText(buildGetterMethodText(candidateField));
+    }
+
+    private void generateFluentMethod(final PsiField candidateField) {
+        createMethodFromText(buildFluentMethodText(candidateField));
+    }
+
+    private String buildSetterMethodText(final PsiField candidateField) {
+
+        return "public void " + constructMethodName(candidateField, setterPrefix) +
+                " (" + candidateField.getType().getCanonicalText() + " " +
+                candidateField.getName() + ") {\n" +
+                "\tthis." + candidateField.getName() + " = " +
+                candidateField.getName() + ";\n}";
+
+    }
+
+    private String buildGetterMethodText(final PsiField candidateField) {
+
+        String prefix = "";
+
+        if (candidateField.getType().isAssignableFrom(PsiType.BOOLEAN)) {
+            prefix = "is";
+        } else {
+            prefix = getterPrefix;
+        }
+
+        return "public " + candidateField.getType().getCanonicalText() + " " +
+                constructMethodName(candidateField, prefix) + " () {\n" +
+                "\treturn this." + candidateField.getName() + ";\n}";
+
+    }
+
+    private String buildFluentMethodText(final PsiField candidateField) {
+
+        return "public " + psiClass.getName() + " " +
+                constructMethodName(candidateField, fluentPrefix) + " (" +
+                candidateField.getType().getCanonicalText() + " " +
+                candidateField.getName() + ") {\n" +
+                "\tthis." + candidateField.getName() + " = " +
+                candidateField.getName() + ";\n" + "\treturn this;\n}";
+    }
+
+    private String constructMethodName(final PsiField candidateField, String prefix) {
         final String fieldName = candidateField.getName();
-        if (getterPrefix.equals("")) {
+        if (prefix.equals("")) {
             return fieldName;
         } else {
-            return getterPrefix + upperFirstLetter(fieldName);
+            return prefix + StringUtils.capitalizeFirstLetter(fieldName);
         }
     }
 
@@ -99,49 +141,6 @@ public class FluentAccessorsWorker {
                 element = element.getPrevSibling();
             }
         }
-
         return file;
-
-    }
-
-    private String buildWriteMethodText(final PsiField candidateField) {
-        String m = "public " + psiClass.getName() + " "
-                + constructSetterName(candidateField) + "(" + "final " + candidateField.getType().getCanonicalText()
-                + " " + candidateField.getName() + "){";
-        if (invokeExistingSetters) {
-            m += retrieveExistingSetterName(candidateField) + "(" + candidateField.getName() + ");";
-        } else {
-            m += "this." + candidateField.getName() + " = " + candidateField.getName() + ";";
-        }
-        m +=" return this; }";
-
-        return m;
-    }
-
-    private String constructSetterName(final PsiField candidateField) {
-        final String fieldName = candidateField.getName();
-        if (setterPrefix.equals("")) {
-            return fieldName;
-        } else {
-            return setterPrefix + upperFirstLetter(fieldName);
-        }
-    }
-
-    /**
-     * Returns the name of the existing setter method for the specified field.
-     * Note: currently just the name is assembled as expected from the Java Bean standard
-     * rather than finding the method reference in the containing PsiClass.
-     */
-    private String retrieveExistingSetterName(final PsiField candidateField) {
-        String name = candidateField.getName();
-        if (candidateField.getType().isAssignableFrom(PsiType.BOOLEAN) && name != null && name.startsWith("is")) {
-            name = name.substring(2);
-        }
-        return "set" + upperFirstLetter(name);
-    }
-
-    private String upperFirstLetter(final String name) {
-        char[] firstLetter = new char[]{name.charAt(0)};
-        return new String(firstLetter).toUpperCase() + name.substring(1);
     }
 }

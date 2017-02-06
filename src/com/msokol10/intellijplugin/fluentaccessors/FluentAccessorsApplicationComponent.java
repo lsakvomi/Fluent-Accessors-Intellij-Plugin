@@ -4,19 +4,14 @@ import com.intellij.openapi.components.ApplicationComponent;
 import com.intellij.openapi.components.PersistentStateComponent;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Created by msokolov on 31.01.2017.
- */
 public class FluentAccessorsApplicationComponent implements ApplicationComponent,
         PersistentStateComponent<FluentAccessorsApplicationComponent.State> {
 
 
     private State state = new State();
 
-
     public FluentAccessorsApplicationComponent() {
     }
-
 
     @Override
     public State getState() {
@@ -31,13 +26,10 @@ public class FluentAccessorsApplicationComponent implements ApplicationComponent
         // TODO: insert component disposal logic here
     }
 
-
     @NotNull
     public String getComponentName() {
         return "FluentAccessorsApplicationComponent";
     }
-
-
 
     @Override
     public void loadState(final State o) {
@@ -53,12 +45,20 @@ public class FluentAccessorsApplicationComponent implements ApplicationComponent
         return this.state.getGetterPrefix();
     }
 
+    public String getFluentPrefix() {
+        return this.state.getFluentPrefix();
+    }
+
+    public boolean isGeneratingSetters() {
+        return this.state.isGenerateSetters();
+    }
+
     public boolean isGeneratingGetters() {
         return this.state.isGenerateGetters();
     }
 
-    public boolean isInvokeExistingSetters() {
-        return this.state.isInvokeExistingSetters();
+    public boolean isGeneratingFluent() {
+        return this.state.isGenerateFluent();
     }
 
     public void updateSetterPrefix(String setterPrefix) {
@@ -69,20 +69,30 @@ public class FluentAccessorsApplicationComponent implements ApplicationComponent
         this.state.setGetterPrefix(getterPrefix);
     }
 
+    public void updateFluentPrefix(String fluentPrefix) {
+        this.state.setFluentPrefix(fluentPrefix);
+    }
+
+    public void updateIsGeneratingSetters(boolean b) {
+        this.state.setGenerateSetters(b);
+    }
+
     public void updateIsGeneratingGetters(boolean b) {
         this.state.setGenerateGetters(b);
     }
-
-    public void updateIsInvokeExistingSetters(boolean b) {
-        this.state.setInvokeExistingSetters(b);
+    public void updateIsGeneratingFluent(boolean b) {
+        this.state.setGenerateFluent(b);
     }
+
 
 
     public static class State {
         private String setterPrefix;
         private String getterPrefix;
+        private String fluentPrefix;
+        private boolean generateSetters;
         private boolean generateGetters;
-        private boolean invokeExistingSetters;
+        private boolean generateFluent;
 
         public String getSetterPrefix() {
             return setterPrefix;
@@ -100,6 +110,22 @@ public class FluentAccessorsApplicationComponent implements ApplicationComponent
             this.getterPrefix = getterPrefix;
         }
 
+        public String getFluentPrefix() {
+            return fluentPrefix;
+        }
+
+        public void setFluentPrefix(final String fluentPrefix) {
+            this.fluentPrefix = fluentPrefix;
+        }
+
+        public boolean isGenerateSetters() {
+            return generateSetters;
+        }
+
+        public void setGenerateSetters(final boolean generateSetters) {
+            this.generateSetters = generateSetters;
+        }
+
         public boolean isGenerateGetters() {
             return generateGetters;
         }
@@ -108,12 +134,12 @@ public class FluentAccessorsApplicationComponent implements ApplicationComponent
             this.generateGetters = generateGetters;
         }
 
-        public boolean isInvokeExistingSetters() {
-            return invokeExistingSetters;
+        public boolean isGenerateFluent() {
+            return generateFluent;
         }
 
-        public void setInvokeExistingSetters(boolean invokeExistingSetters) {
-            this.invokeExistingSetters = invokeExistingSetters;
+        public void setGenerateFluent(final boolean generateFluent) {
+            this.generateFluent = generateFluent;
         }
     }
 }
