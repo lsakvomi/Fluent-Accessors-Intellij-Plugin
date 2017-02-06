@@ -44,7 +44,7 @@ class FiMethodTester {
         }
 
         for (PsiMethod method : classPsiMethods) {
-            if (isSameNamePublicNonFinalInstanceMethod(methodName, method)) {
+            if (isSamePublicMethodName(methodName, method)) {
                return isSetter(method, candidateField.getType());
             }
         }
@@ -66,7 +66,7 @@ class FiMethodTester {
         }
 
         for (PsiMethod method : classPsiMethods) {
-            if (isSameNamePublicNonFinalInstanceMethod(methodName, method)) {
+            if (isSamePublicMethodName(methodName, method)) {
                 return isGetter(method, candidateField.getType());
             }
         }
@@ -84,7 +84,7 @@ class FiMethodTester {
         }
 
         for (PsiMethod method : classPsiMethods) {
-            if (isSameNamePublicNonFinalInstanceMethod(methodName, method)) {
+            if (isSamePublicMethodName(methodName, method)) {
                 return isFluent(method, candidateField.getType());
             }
         }
@@ -94,7 +94,7 @@ class FiMethodTester {
     private boolean isSetter(final PsiMethod method, final PsiType fieldType) {
         PsiType returnType = method.getReturnType();
 
-        if (returnType == null) {
+        if (PsiType.VOID.equals(returnType)) {
             PsiParameterList psiParameterList = method.getParameterList();
             PsiParameter[] psiParameter = psiParameterList.getParameters();
             return psiParameter.length == 1 && psiParameter[0].getType().equals(fieldType);
@@ -123,18 +123,9 @@ class FiMethodTester {
         return psiParameter.length == 1 && psiParameter[0].getType().equals(fieldType);
     }
 
-    private boolean isSameNamePublicNonFinalInstanceMethod(final String fieldName, final PsiMethod method) {
+    private boolean isSamePublicMethodName(String methodName, PsiMethod method) {
 
-        FluentAccessorsApplicationComponent applicationComponent = ApplicationManager.getApplication()
-                .getComponent(FluentAccessorsApplicationComponent.class);
-
-        String setterPrefix = applicationComponent.getSetterPrefix();
-        String getterPrefix = applicationComponent.getGetterPrefix();
-        String fluentPrefix = applicationComponent.getFluentPrefix();
-
-        if ((method.getName().equals(setterPrefix + fieldName)) ||
-                (method.getName().equals(getterPrefix + fieldName)) ||
-                (method.getName().equals(fluentPrefix + fieldName))) {
+        if (method.getName().equals(methodName)) {
             if (method.hasModifierProperty(PsiModifier.PUBLIC)) {
                 if (!(method.hasModifierProperty(PsiModifier.FINAL))) {
                     if (!(method.hasModifierProperty(PsiModifier.STATIC))) {
@@ -144,5 +135,47 @@ class FiMethodTester {
             }
         }
         return false;
+
+    }
+
+    private boolean isSameNamePublicNonFinalInstanceMethod(final String fieldName, final PsiMethod method) {
+
+        FluentAccessorsApplicationComponent applicationComponent = ApplicationManager.getApplication()
+                .getComponent(FluentAccessorsApplicationComponent.class);
+
+        String setterPrefix = applicationComponent.getSetterPrefix();
+        String getterPrefix = applicationComponent.getGetterPrefix();
+        String fluentPrefix = applicationComponent.getFluentPrefix();
+
+        String setterName = "";
+        String getterName = "";
+        String fluentName = "";
+
+        if (setterPrefix.equals("")) {
+            setterName = fieldName;
+        } else {
+            setterName = setterPrefix + StringUtils.capitalizeFirstLetter(fieldName);
+        }
+
+        if (getterPrefix.equals("")) {
+            getterName = fieldName;
+        } else {
+            if (method.getReturnType() != null && method.getReturnType().equals(PsiType.BOOLEAN)) {
+                getterName = "is" + StringUtils.capitalizeFirstLetter(fieldName);
+            } else {
+                getterName = getterPrefix + StringUtils.capitalizeFirstLetter(fieldName);
+            }
+        }
+
+        if (fluentPrefix.equals("")) {
+            fluentName = fieldName;
+        } else {
+            fluentName = fluentPrefix + StringUtils.capitalizeFirstLetter(fieldName);
+        }
+
+        return isSamePublicMethodName(setterName, method) ||
+                isSamePublicMethodName(getterName, method) ||
+                isSamePublicMethodName(fluentName, method);
+
     }
 }

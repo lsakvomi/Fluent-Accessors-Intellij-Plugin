@@ -87,12 +87,12 @@ public class FluentAccessorsApplicationComponent implements ApplicationComponent
 
 
     public static class State {
-        private String setterPrefix;
-        private String getterPrefix;
-        private String fluentPrefix;
-        private boolean generateSetters;
-        private boolean generateGetters;
-        private boolean generateFluent;
+        private String setterPrefix = "set";
+        private String getterPrefix = "get";
+        private String fluentPrefix = "with";
+        private boolean generateSetters = false;
+        private boolean generateGetters = true;
+        private boolean generateFluent = true;
 
         public String getSetterPrefix() {
             return setterPrefix;
