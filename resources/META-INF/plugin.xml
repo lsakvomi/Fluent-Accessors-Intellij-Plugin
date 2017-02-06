@@ -2,7 +2,7 @@
   <id>com.your.company.unique.plugin.id</id>
   <name>Fluent Accessors</name>
   <version>0.1.1</version>
-  <vendor email="maxsokol10@gmail.com" url="https://github.com/msokol10/idea-generate-fluent-interface">MSokol10</vendor>
+  <vendor email="maxsokol10@gmail.com" url="https://github.com/msokol10/Fluent-Accessors-Intellij-Plugin">MSokol10</vendor>
 
   <description>Generating getters and setters due to Fluent Interface</description>
 
